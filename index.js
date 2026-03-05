@@ -1,7 +1,9 @@
+
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
+const supabase = require("./supabase");
 
 const app = express();
 app.use(cors());
@@ -18,8 +20,51 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 
-  socket.on("new-order", (orderData) => {
+  socket.on("new-order", async (orderData) => {
     io.emit("order-notification", orderData); // broadcast to all clients
+
+    // Production: Update menu quantities in DB, then emit updated menu items
+    if (orderData && Array.isArray(orderData.items)) {
+      try {
+        // Update each menu item's quantity in the database
+        const updatedItems = [];
+        for (const item of orderData.items) {
+          // Fetch current menu item
+          const { data: menuItem, error: fetchError } = await supabase
+            .from('menu_items')
+            .select('*')
+            .eq('id', item.id)
+            .single();
+          if (fetchError || !menuItem) continue;
+
+          // Calculate new quantity
+          const newQuantity = (menuItem.quantity || 0) - (item.quantity || 1);
+          // Update in DB
+          const { data: updated, error: updateError } = await supabase
+            .from('menu_items')
+            .update({ quantity: newQuantity })
+            .eq('id', item.id)
+            .select()
+            .single();
+          if (!updateError && updated) {
+            updatedItems.push(updated);
+          }
+        }
+        if (updatedItems.length > 0) {
+          io.emit("menu-update", updatedItems); // broadcast actual updated menu items
+        }
+      } catch (err) {
+        console.error("Error updating menu items:", err);
+      }
+    }
+  });
+
+  // Real-time menu item update (when individual items added/removed from cart)
+  socket.on("menu-item-update", (updateData) => {
+    if (updateData && updateData.id && updateData.quantity !== undefined) {
+      console.log(`📋 Menu item update received: ${updateData.id} quantity=${updateData.quantity}`);
+      io.emit("menu-item-update", updateData); // broadcast to all clients
+    }
   });
 
   socket.on("disconnect", () => {
