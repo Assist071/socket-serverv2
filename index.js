@@ -8,6 +8,15 @@ const supabase = require("./supabase");
 const app = express();
 app.use(cors());
 
+// Validate Supabase client
+if (!supabase || typeof supabase.from !== 'function') {
+  console.error('❌ FATAL: Supabase client not properly initialized');
+  console.error('   supabase object:', supabase);
+  console.error('   typeof supabase.from:', typeof supabase?.from);
+  process.exit(1);
+}
+console.log('✅ Supabase client validated');
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -64,6 +73,14 @@ io.on("connection", (socket) => {
     if (updateData && updateData.id && updateData.quantity !== undefined) {
       console.log(`📋 Menu item update received: ${updateData.id} quantity=${updateData.quantity}`);
       io.emit("menu-item-update", updateData); // broadcast to all clients
+    }
+  });
+
+  // Real-time order status update (when order status changes to pending, preparing, ready)
+  socket.on("order-status-update", (statusData) => {
+    if (statusData && statusData.orderId && statusData.status) {
+      console.log(`🚨 Order status update: Order #${statusData.orderId} → ${statusData.status}`);
+      io.emit("order-status-changed", statusData); // broadcast to all clients
     }
   });
 
