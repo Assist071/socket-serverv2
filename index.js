@@ -8,46 +8,12 @@ const supabase = require("./supabase");
 const app = express();
 app.use(cors());
 
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.json({ status: "✓ Socket.IO server is running", timestamp: new Date().toISOString() });
-});
-
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: function(origin, callback) {
-      // Allow localhost development and Render.com production
-      const allowedOrigins = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8080",
-        "http://localhost",
-        "http://127.0.0.1",
-        "https://socket-serverv2.onrender.com",
-        "https://hub-food-flow.onrender.com"
-      ];
-      
-      // Allow any .onrender.com domain
-      if (origin && origin.includes('.onrender.com')) {
-        return callback(null, true);
-      }
-      
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ["GET", "POST"],
-    credentials: false,
-    allowEIO3: true
-  },
-  transports: ["polling", "websocket"],
-  pingInterval: 25000,
-  pingTimeout: 60000,
-  maxHttpBufferSize: 1e6,
-  allowUpgrades: true
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 
 // Example event: broadcast new order
@@ -101,43 +67,12 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Real-time order status update (when order status changes to pending, preparing, ready)
-  socket.on("order-status-update", (statusData) => {
-    if (statusData && statusData.orderId && statusData.status) {
-      console.log(`🚨 Order status update: Order #${statusData.orderId} → ${statusData.status}`);
-      io.emit("order-status-changed", statusData); // broadcast to all clients
-    }
-  });
-
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
   });
 });
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
-
-server.listen(PORT, HOST, () => {
-  console.log(`🚀 Socket.IO server running on port ${PORT}`);
-  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Supabase URL: ${process.env.SUPABASE_URL ? '✓ configured' : '✗ missing'}`);
-  console.log(`📊 CORS Origins: socket-serverv2.onrender.com, localhost:3000, localhost:5173`);
-  console.log(`⚡ Transports: polling (primary), websocket (fallback)`);
-});
-
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
+server.listen(PORT, () => {
+  console.log(`Socket.IO server running on port ${PORT}`);
 });
