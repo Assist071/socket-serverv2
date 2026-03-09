@@ -1,27 +1,26 @@
-require('dotenv').config();
-
-// Debug env loading
-console.log('🔧 [Supabase] Environment variables:');
-console.log('   SUPABASE_URL:', process.env.SUPABASE_URL ? '✓ Loaded' : '✗ MISSING');
-console.log('   SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? '✓ Loaded (length: ' + process.env.SUPABASE_SERVICE_KEY.length + ')' : '✗ MISSING');
+// Load .env only in development (optional)
+try {
+  require('dotenv').config();
+} catch (err) {
+  console.log('⚠️  dotenv not available (OK on production like Render)');
+}
 
 const { createClient } = require('@supabase/supabase-js');
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_KEY;
 
+console.log('🔧 Supabase Config:');
+console.log('   URL:', url ? '✓' : '✗ MISSING');
+console.log('   Key:', key ? '✓' : '✗ MISSING');
+
 if (!url || !key) {
-  console.error('❌ Missing Supabase credentials!');
-  console.error('   URL:', url ? 'Set' : 'MISSING');
-  console.error('   Key:', key ? 'Set' : 'MISSING');
+  console.error('❌ Missing Supabase credentials');
   process.exit(1);
 }
 
-console.log('✨ Creating Supabase client...');
 const supabase = createClient(url, key);
-
-console.log('✅ Supabase client created');
-console.log('   Client keys:', Object.keys(supabase).slice(0, 5).join(', ') + '...');
+console.log('✅ Supabase client ready');
 
 module.exports = supabase;
 
