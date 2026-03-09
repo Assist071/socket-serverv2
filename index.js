@@ -4,22 +4,11 @@ const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
 
-console.log('🚀 Starting socket server initialization...');
+console.log('🚀 Loading socket server...');
 
-let supabase;
-try {
-  supabase = require("./supabase");
-  console.log('✅ Supabase module loaded');
-  
-  // Validate that it's a proper client instance
-  if (!supabase || typeof supabase.from !== 'function') {
-    throw new Error(`Supabase client invalid: ${JSON.stringify(supabase).substring(0, 100)}`);
-  }
-} catch (err) {
-  console.error('❌ FATAL: Supabase initialization failed');
-  console.error('   Error:', err.message);
-  process.exit(1);
-}
+const supabase = require("./supabase");
+
+console.log('✅ Supabase loaded, type:', typeof supabase);
 
 const app = express();
 app.use(cors());
