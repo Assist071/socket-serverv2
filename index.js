@@ -44,6 +44,12 @@
       }
     });
 
+    // Real-time feedback notification
+    socket.on("new-feedback", (feedbackData) => {
+      console.log("📢 New feedback received, broadcasting to clients");
+      io.emit("feedback-notification", feedbackData);
+    });
+
     // Real-time order status update (when order status changes to pending, preparing, ready, or completed)
     socket.on("order-status-update", (statusData) => {
       if (statusData && statusData.orderId && statusData.status) {
