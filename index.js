@@ -8,6 +8,11 @@
   const app = express();
   app.use(cors());
 
+  // Root route for easy wake-up check
+  app.get("/", (req, res) => {
+    res.status(200).json({ status: "alive", service: "socket-server" });
+  });
+
   // Health check endpoint for Render wake-up
   app.get("/health", (req, res) => {
     res.status(200).send("OK");
@@ -18,7 +23,10 @@
     cors: {
       origin: "*",
       methods: ["GET", "POST"]
-    }
+    },
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    connectTimeout: 45000
   });
 
   // Example event: broadcast new order
